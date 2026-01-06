@@ -1660,6 +1660,92 @@ void WaveshareEPaper2P9InBV3::dump_config() {
 }
 
 // ========================================================
+//               2.90in Type B (LUT from OTP)
+// Datasheet:
+//  - https://files.waveshare.com/upload/a/af/2.9-inch-e-Paper-(B)--V4-user-manual.pdf
+// ========================================================
+
+void WaveshareEPaper2P9InBV4::initialize() {
+  // from https://github.com/waveshareteam/e-Paper/blob/master/Arduino/epd2in9b_V4/epd2in9b_V4.cpp
+  int width = this->get_width_internal();
+  int height = this->get_height_internal();
+
+  this->reset_();
+
+  this->wait_until_idle_();
+  this->command(0x12);
+  this->wait_until_idle_();
+
+  this->command(0x01);  // Driver output control
+  this->data((height - 1) % 256);
+  this->data((height - 1) / 256);
+  this->data(0x00);
+
+  this->command(0x11);  // data entry mode
+  this->data(0x03);
+  this->command(0x44);  // set Ram-X address start/end position
+  this->data(0x00);
+  this->data(width / 8 - 1);
+
+  this->command(0x45);  // set Ram-Y address start/end position
+  this->data(0x00);
+  this->data(0x00);
+  this->data((height - 1) % 256);
+  this->data((height - 1) / 256);
+
+  this->command(0x3C);  // BorderWavefrom
+  this->data(0x05);
+
+  this->command(0x21);  //  Display update control
+  this->data(0x00);
+  this->data(0x80);
+
+  this->command(0x18);  // Read built-in temperature sensor
+  this->data(0x80);
+
+  this->command(0x4E);  // set RAM x address count to 0;
+  this->data(0x00);
+  this->command(0x4F);  // set RAM y address count to 0X199;
+  this->data(0x00);
+  this->data(0x00);
+  this->wait_until_idle_();
+}
+void HOT WaveshareEPaper2P9InBV4::display() {
+  int32_t buf_len_half = this->get_buffer_length_() >> 1;
+  this->initialize();
+
+  // COMMAND DATA START TRANSMISSION 1 (BLACK)
+  this->command(0x24);
+  delay(2);
+  for (uint32_t i = 0; i < buf_len_half; i++) {
+    this->data(~this->buffer_[i]);
+  }
+  delay(2);
+
+  // COMMAND DATA START TRANSMISSION 2  (RED)
+  this->command(0x26);
+  delay(2);
+  for (uint32_t i = buf_len_half; i < buf_len_half * 2u; i++) {
+    this->data(this->buffer_[i]);
+  }
+
+  this->command(0x22);  // Display Update Control
+  this->data(0xF7);
+  this->command(0x20);  // Activate Display Update Sequence
+  this->wait_until_idle_();
+}
+int WaveshareEPaper2P9InBV4::get_width_internal() { return 128; }
+int WaveshareEPaper2P9InBV4::get_height_internal() { return 296; }
+void WaveshareEPaper2P9InBV4::dump_config() {
+  LOG_DISPLAY("", "Waveshare E-Paper", this);
+  ESP_LOGCONFIG(TAG, "  Model: 2.9in (B) V4");
+  LOG_PIN("  Reset Pin: ", this->reset_pin_);
+  LOG_PIN("  DC Pin: ", this->dc_pin_);
+  LOG_PIN("  Busy Pin: ", this->busy_pin_);
+  LOG_UPDATE_INTERVAL(this);
+}
+
+// ========================================================
 //               2.90in v2 rev2
 // based on SDK and examples in ZIP file from:
 // https://www.waveshare.com/pico-epaper-2.9.htm
