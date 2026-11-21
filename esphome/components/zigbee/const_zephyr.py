@@ -1,17 +1,17 @@
-import esphome.codegen as cg
+# These schema keys live in esphome.const so entity base
+# schemas can use them without importing this package.
+from esphome.const import (  # noqa: F401  # pylint: disable=unused-import
+    CONF_ZIGBEE_BINARY_SENSOR,
+    CONF_ZIGBEE_ID,
+    CONF_ZIGBEE_NUMBER,
+    CONF_ZIGBEE_SENSOR,
+    CONF_ZIGBEE_SWITCH,
+)
 
-zigbee_ns = cg.esphome_ns.namespace("zigbee")
-ZigbeeComponent = zigbee_ns.class_("ZigbeeComponent", cg.Component)
-BinaryAttrs = zigbee_ns.struct("BinaryAttrs")
-
-CONF_MAX_EP_NUMBER = 8
-CONF_ZIGBEE_ID = "zigbee_id"
-CONF_ON_JOIN = "on_join"
-CONF_WIPE_ON_BOOT = "wipe_on_boot"
-CONF_ZIGBEE_BINARY_SENSOR = "zigbee_binary_sensor"
+MAX_EP_NUMBER_ZEPHYR = 8
+CONF_IEEE802154_VENDOR_OUI = "ieee802154_vendor_oui"
 
 # Keys for CORE.data storage
-KEY_ZIGBEE = "zigbee"
 KEY_EP_NUMBER = "ep_number"
 
 # External ZBOSS SDK types (just strings for codegen)
@@ -22,3 +22,6 @@ ZB_ZCL_IDENTIFY_ATTRS_T = "zb_zcl_identify_attrs_t"
 ZB_ZCL_CLUSTER_ID_BASIC = "ZB_ZCL_CLUSTER_ID_BASIC"
 ZB_ZCL_CLUSTER_ID_IDENTIFY = "ZB_ZCL_CLUSTER_ID_IDENTIFY"
 ZB_ZCL_CLUSTER_ID_BINARY_INPUT = "ZB_ZCL_CLUSTER_ID_BINARY_INPUT"
+ZB_ZCL_CLUSTER_ID_ANALOG_INPUT = "ZB_ZCL_CLUSTER_ID_ANALOG_INPUT"
+ZB_ZCL_CLUSTER_ID_BINARY_OUTPUT = "ZB_ZCL_CLUSTER_ID_BINARY_OUTPUT"
+ZB_ZCL_CLUSTER_ID_ANALOG_OUTPUT = "ZB_ZCL_CLUSTER_ID_ANALOG_OUTPUT"

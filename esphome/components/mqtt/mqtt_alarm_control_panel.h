@@ -10,7 +10,7 @@
 
 namespace esphome::mqtt {
 
-class MQTTAlarmControlPanelComponent : public mqtt::MQTTComponent {
+class MQTTAlarmControlPanelComponent final : public mqtt::MQTTComponent {
  public:
   explicit MQTTAlarmControlPanelComponent(alarm_control_panel::AlarmControlPanel *alarm_control_panel);
 
@@ -25,7 +25,7 @@ class MQTTAlarmControlPanelComponent : public mqtt::MQTTComponent {
   void dump_config() override;
 
  protected:
-  std::string component_type() const override;
+  const char *component_type() const override;
   const EntityBase *get_entity() const override;
 
   alarm_control_panel::AlarmControlPanel *alarm_control_panel_;

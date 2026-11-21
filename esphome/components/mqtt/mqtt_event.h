@@ -10,7 +10,7 @@
 
 namespace esphome::mqtt {
 
-class MQTTEventComponent : public mqtt::MQTTComponent {
+class MQTTEventComponent final : public mqtt::MQTTComponent {
  public:
   explicit MQTTEventComponent(event::Event *event);
 
@@ -25,7 +25,7 @@ class MQTTEventComponent : public mqtt::MQTTComponent {
 
  protected:
   bool publish_event_(const std::string &event_type);
-  std::string component_type() const override;
+  const char *component_type() const override;
   const EntityBase *get_entity() const override;
 
   event::Event *event_;

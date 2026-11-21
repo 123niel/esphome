@@ -10,7 +10,7 @@
 
 namespace esphome::mqtt {
 
-class MQTTNumberComponent : public mqtt::MQTTComponent {
+class MQTTNumberComponent final : public mqtt::MQTTComponent {
  public:
   /** Construct this MQTTNumberComponent instance with the provided friendly_name and number
    *
@@ -32,7 +32,7 @@ class MQTTNumberComponent : public mqtt::MQTTComponent {
 
  protected:
   /// Override for MQTTComponent, returns "number".
-  std::string component_type() const override;
+  const char *component_type() const override;
   const EntityBase *get_entity() const override;
 
   number::Number *number_;

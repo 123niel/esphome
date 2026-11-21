@@ -10,7 +10,7 @@
 
 namespace esphome::uart {
 
-class LibreTinyUARTComponent : public UARTComponent, public Component {
+class LibreTinyUARTComponent final : public UARTComponent, public Component {
  public:
   void setup() override;
   void dump_config() override;
@@ -21,10 +21,12 @@ class LibreTinyUARTComponent : public UARTComponent, public Component {
   bool peek_byte(uint8_t *data) override;
   bool read_array(uint8_t *data, size_t len) override;
 
-  int available() override;
-  void flush() override;
+  size_t available() override;
+  UARTFlushResult flush() override;
 
   uint16_t get_config();
+  /// Hardware port codegen picked from the board's pin lists.
+  void set_hardware_port(int8_t port) { this->hardware_idx_ = port; }
 
   HardwareSerial *get_hw_serial() { return this->serial_; }
   int8_t get_hw_serial_number() { return this->hardware_idx_; }

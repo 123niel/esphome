@@ -10,7 +10,7 @@
 
 namespace esphome::mqtt {
 
-class MQTTJSONLightComponent : public mqtt::MQTTComponent, public light::LightRemoteValuesListener {
+class MQTTJSONLightComponent final : public mqtt::MQTTComponent, public light::LightRemoteValuesListener {
  public:
   explicit MQTTJSONLightComponent(light::LightState *state);
 
@@ -28,7 +28,7 @@ class MQTTJSONLightComponent : public mqtt::MQTTComponent, public light::LightRe
   void on_light_remote_values_update() override;
 
  protected:
-  std::string component_type() const override;
+  const char *component_type() const override;
   const EntityBase *get_entity() const override;
 
   bool publish_state_();

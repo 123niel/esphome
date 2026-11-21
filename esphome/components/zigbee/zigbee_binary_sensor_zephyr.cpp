@@ -10,27 +10,27 @@ extern "C" {
 }
 namespace esphome::zigbee {
 
-static const char *const TAG = "zigbee.binary_sensor";
+ESPHOME_LOG_TAG(TAG, "zigbee.binary_sensor");
 
 ZigbeeBinarySensor::ZigbeeBinarySensor(binary_sensor::BinarySensor *binary_sensor) : binary_sensor_(binary_sensor) {}
 
 void ZigbeeBinarySensor::setup() {
   this->binary_sensor_->add_on_state_callback([this](bool state) {
     this->cluster_attributes_->present_value = state ? ZB_TRUE : ZB_FALSE;
-    ESP_LOGD(TAG, "Set attribute end point: %d, present_value %d", this->end_point_,
+    ESP_LOGD(TAG, "Set attribute endpoint: %d, present_value %d", this->endpoint_,
              this->cluster_attributes_->present_value);
-    ZB_ZCL_SET_ATTRIBUTE(this->end_point_, ZB_ZCL_CLUSTER_ID_BINARY_INPUT, ZB_ZCL_CLUSTER_SERVER_ROLE,
+    ZB_ZCL_SET_ATTRIBUTE(this->endpoint_, ZB_ZCL_CLUSTER_ID_BINARY_INPUT, ZB_ZCL_CLUSTER_SERVER_ROLE,
                          ZB_ZCL_ATTR_BINARY_INPUT_PRESENT_VALUE_ID, &this->cluster_attributes_->present_value,
                          ZB_FALSE);
-    this->parent_->flush();
+    this->parent_->force_report();
   });
 }
 
 void ZigbeeBinarySensor::dump_config() {
   ESP_LOGCONFIG(TAG,
                 "Zigbee Binary Sensor\n"
-                "  End point: %d, present_value %u",
-                this->end_point_, this->cluster_attributes_->present_value);
+                "  Endpoint: %d, present_value %u",
+                this->endpoint_, this->cluster_attributes_->present_value);
 }
 
 }  // namespace esphome::zigbee

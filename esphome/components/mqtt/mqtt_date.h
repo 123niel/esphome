@@ -10,7 +10,7 @@
 
 namespace esphome::mqtt {
 
-class MQTTDateComponent : public mqtt::MQTTComponent {
+class MQTTDateComponent final : public mqtt::MQTTComponent {
  public:
   /** Construct this MQTTDateComponent instance with the provided friendly_name and date
    *
@@ -31,7 +31,7 @@ class MQTTDateComponent : public mqtt::MQTTComponent {
   bool publish_state(uint16_t year, uint8_t month, uint8_t day);
 
  protected:
-  std::string component_type() const override;
+  const char *component_type() const override;
   const EntityBase *get_entity() const override;
 
   datetime::DateEntity *date_;

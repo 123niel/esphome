@@ -10,7 +10,7 @@
 
 namespace esphome::mqtt {
 
-class MQTTTextComponent : public mqtt::MQTTComponent {
+class MQTTTextComponent final : public mqtt::MQTTComponent {
  public:
   /** Construct this MQTTTextComponent instance with the provided friendly_name and text
    *
@@ -32,7 +32,7 @@ class MQTTTextComponent : public mqtt::MQTTComponent {
 
  protected:
   /// Override for MQTTComponent, returns "text".
-  std::string component_type() const override;
+  const char *component_type() const override;
   const EntityBase *get_entity() const override;
 
   text::Text *text_;

@@ -10,7 +10,7 @@
 
 namespace esphome::mqtt {
 
-class MQTTValveComponent : public mqtt::MQTTComponent {
+class MQTTValveComponent final : public mqtt::MQTTComponent {
  public:
   explicit MQTTValveComponent(valve::Valve *valve);
 
@@ -27,7 +27,7 @@ class MQTTValveComponent : public mqtt::MQTTComponent {
   void dump_config() override;
 
  protected:
-  std::string component_type() const override;
+  const char *component_type() const override;
   const EntityBase *get_entity() const override;
 
   valve::Valve *valve_;

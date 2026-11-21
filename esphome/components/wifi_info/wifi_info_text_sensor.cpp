@@ -1,5 +1,6 @@
 #include "wifi_info_text_sensor.h"
-#ifdef USE_WIFI
+#if defined(USE_WIFI) && defined(USE_TEXT_SENSOR)
+#include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 
 #ifdef USE_ESP8266
@@ -8,11 +9,9 @@
 
 namespace esphome::wifi_info {
 
-static const char *const TAG = "wifi_info";
+ESPHOME_LOG_TAG(TAG, "wifi_info");
 
-#ifdef USE_WIFI_LISTENERS
-
-static constexpr size_t MAX_STATE_LENGTH = 255;
+#ifdef USE_WIFI_IP_STATE_LISTENERS
 
 /********************
  * IPAddressWiFiInfo
@@ -24,16 +23,23 @@ void IPAddressWiFiInfo::dump_config() { LOG_TEXT_SENSOR("", "IP Address", this);
 
 void IPAddressWiFiInfo::on_ip_state(const network::IPAddresses &ips, const network::IPAddress &dns1,
                                     const network::IPAddress &dns2) {
-  this->publish_state(ips[0].str());
+  char buf[network::IP_ADDRESS_BUFFER_SIZE];
+  ips[0].str_to(buf);
+  this->publish_state(buf);
+#ifdef WIFI_INFO_IP_SENSOR_COUNT
   uint8_t sensor = 0;
   for (const auto &ip : ips) {
-    if (ip.is_set()) {
-      if (this->ip_sensors_[sensor] != nullptr) {
-        this->ip_sensors_[sensor]->publish_state(ip.str());
-      }
-      sensor++;
+    if (!ip.is_set())
+      continue;
+    if (sensor == WIFI_INFO_IP_SENSOR_COUNT)
+      break;
+    if (this->ip_sensors_[sensor] != nullptr) {
+      ip.str_to(buf);
+      this->ip_sensors_[sensor]->publish_state(buf);
     }
+    sensor++;
   }
+#endif
 }
 
 /*********************
@@ -54,6 +60,10 @@ void DNSAddressWifiInfo::on_ip_state(const network::IPAddresses &ips, const netw
   dns2.str_to(buf + len1 + 1);
   this->publish_state(buf);
 }
+
+#endif  // USE_WIFI_IP_STATE_LISTENERS
+
+#ifdef USE_WIFI_SCAN_RESULTS_LISTENERS
 
 /**********************
  * ScanResultsWiFiInfo
@@ -77,14 +87,14 @@ static char *format_scan_entry(char *buf, const char *ssid, size_t ssid_len, int
 }
 
 void ScanResultsWiFiInfo::on_wifi_scan_results(const wifi::wifi_scan_vector_t<wifi::WiFiScanResult> &results) {
-  char buf[MAX_STATE_LENGTH + 1];
+  char buf[MAX_STATE_LEN + 1];
   char *ptr = buf;
-  const char *end = buf + MAX_STATE_LENGTH;
+  const char *end = buf + MAX_STATE_LEN;
 
   for (const auto &scan : results) {
     if (scan.get_is_hidden())
       continue;
-    const std::string &ssid = scan.get_ssid();
+    const auto &ssid = scan.get_ssid();
     // Max space: ssid + ": " (2) + "-128" (4) + "dB\n" (3) = ssid + 9
     if (ptr + ssid.size() + 9 > end)
       break;
@@ -95,6 +105,10 @@ void ScanResultsWiFiInfo::on_wifi_scan_results(const wifi::wifi_scan_vector_t<wi
   this->publish_state(buf);
 }
 
+#endif  // USE_WIFI_SCAN_RESULTS_LISTENERS
+
+#ifdef USE_WIFI_CONNECT_STATE_LISTENERS
+
 /***************
  * SSIDWiFiInfo
  **************/
@@ -104,7 +118,7 @@ void SSIDWiFiInfo::setup() { wifi::global_wifi_component->add_connect_state_list
 void SSIDWiFiInfo::dump_config() { LOG_TEXT_SENSOR("", "SSID", this); }
 
 void SSIDWiFiInfo::on_wifi_connect_state(StringRef ssid, std::span<const uint8_t, 6> bssid) {
-  this->publish_state(ssid.str());
+  this->publish_state(ssid.c_str(), ssid.size());
 }
 
 /****************
@@ -116,12 +130,14 @@ void BSSIDWiFiInfo::setup() { wifi::global_wifi_component->add_connect_state_lis
 void BSSIDWiFiInfo::dump_config() { LOG_TEXT_SENSOR("", "BSSID", this); }
 
 void BSSIDWiFiInfo::on_wifi_connect_state(StringRef ssid, std::span<const uint8_t, 6> bssid) {
-  char buf[18] = "unknown";
-  if (mac_address_is_valid(bssid.data())) {
-    format_mac_addr_upper(bssid.data(), buf);
-  }
-  this->publish_state(buf);
+  // Not initialized from "unknown": that copies a padded constant, which is RAM on ESP8266
+  char buf[MAC_ADDRESS_PRETTY_BUFFER_SIZE];
+  this->publish_state(mac_address_is_valid(bssid.data()) ? format_mac_addr_upper(bssid.data(), buf) : "unknown");
 }
+
+#endif  // USE_WIFI_CONNECT_STATE_LISTENERS
+
+#ifdef USE_WIFI_POWER_SAVE_LISTENERS
 
 /************************
  * PowerSaveModeWiFiInfo
@@ -179,7 +195,7 @@ void PowerSaveModeWiFiInfo::on_wifi_power_save(wifi::WiFiPowerSaveMode mode) {
   this->publish_state(mode_str);
 }
 
-#endif
+#endif  // USE_WIFI_POWER_SAVE_LISTENERS
 
 /*********************
  * MacAddressWifiInfo

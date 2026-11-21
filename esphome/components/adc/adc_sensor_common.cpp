@@ -1,21 +1,16 @@
 #include "adc_sensor.h"
 #include "esphome/core/log.h"
+#include "esphome/core/progmem.h"
 
-namespace esphome {
-namespace adc {
+namespace esphome::adc {
 
-static const char *const TAG = "adc.common";
+ESPHOME_LOG_TAG(TAG, "adc");
+
+// Indexed by SamplingMode
+PROGMEM_STRING_TABLE(SamplingModeStrings, "average", "minimum", "maximum", "unknown");
 
 const LogString *sampling_mode_to_str(SamplingMode mode) {
-  switch (mode) {
-    case SamplingMode::AVG:
-      return LOG_STR("average");
-    case SamplingMode::MIN:
-      return LOG_STR("minimum");
-    case SamplingMode::MAX:
-      return LOG_STR("maximum");
-  }
-  return LOG_STR("unknown");
+  return SamplingModeStrings::get_log_str(static_cast<uint8_t>(mode), SamplingModeStrings::LAST_INDEX);
 }
 
 template<typename T> Aggregator<T>::Aggregator(SamplingMode mode) {
@@ -67,7 +62,7 @@ template class Aggregator<uint32_t>;
 
 void ADCSensor::update() {
   float value_v = this->sample();
-  ESP_LOGV(TAG, "'%s': Voltage=%.4fV", this->get_name().c_str(), value_v);
+  ESP_LOGV(TAG, "'%s': Voltage=%.4fV", LOG_STR_ARG(this->get_log_name()), value_v);
   this->publish_state(value_v);
 }
 
@@ -77,9 +72,4 @@ void ADCSensor::set_sample_count(uint8_t sample_count) {
   }
 }
 
-void ADCSensor::set_sampling_mode(SamplingMode sampling_mode) { this->sampling_mode_ = sampling_mode; }
-
-float ADCSensor::get_setup_priority() const { return setup_priority::DATA; }
-
-}  // namespace adc
-}  // namespace esphome
+}  // namespace esphome::adc

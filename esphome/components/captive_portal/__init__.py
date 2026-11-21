@@ -1,19 +1,20 @@
 import logging
 
 import esphome.codegen as cg
-from esphome.components import web_server_base
+from esphome.components import web_server_base, web_server_idf, wifi
 from esphome.components.web_server_base import CONF_WEB_SERVER_BASE_ID
-from esphome.config_helpers import filter_source_files_from_platform
+from esphome.components.wifi import DOMAIN as WIFI_DOMAIN
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_AP,
+    CONF_COMPRESSION,
     CONF_ID,
     PLATFORM_BK72XX,
     PLATFORM_ESP32,
     PLATFORM_ESP8266,
     PLATFORM_LN882X,
+    PLATFORM_RP2,
     PLATFORM_RTL87XX,
-    PlatformFramework,
 )
 from esphome.core import CORE, coroutine_with_priority
 from esphome.coroutine import CoroPriority
@@ -32,9 +33,17 @@ def AUTO_LOAD() -> list[str]:
 
 DEPENDENCIES = ["wifi"]
 CODEOWNERS = ["@esphome/core"]
+DOMAIN = "captive_portal"
 
 captive_portal_ns = cg.esphome_ns.namespace("captive_portal")
 CaptivePortal = captive_portal_ns.class_("CaptivePortal", cg.Component)
+
+
+def _require_plain_http(config: ConfigType) -> ConfigType:
+    # Phones check for a captive portal over plain HTTP.
+    web_server_idf.require_plain_http(DOMAIN)
+    return config
+
 
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
@@ -43,6 +52,7 @@ CONFIG_SCHEMA = cv.All(
             cv.GenerateID(CONF_WEB_SERVER_BASE_ID): cv.use_id(
                 web_server_base.WebServerBase
             ),
+            cv.Optional(CONF_COMPRESSION, default="gzip"): cv.one_of("gzip", "br"),
         }
     ).extend(cv.COMPONENT_SCHEMA),
     cv.only_on(
@@ -51,15 +61,17 @@ CONFIG_SCHEMA = cv.All(
             PLATFORM_ESP8266,
             PLATFORM_BK72XX,
             PLATFORM_LN882X,
+            PLATFORM_RP2,
             PLATFORM_RTL87XX,
         ]
     ),
+    _require_plain_http,
 )
 
 
-def _final_validate(config: ConfigType) -> ConfigType:
+def _final_validate(config: ConfigType) -> None:
     full_config = fv.full_config.get()
-    wifi_conf = full_config.get("wifi")
+    wifi_conf = full_config.get(WIFI_DOMAIN)
 
     if wifi_conf is None:
         # This shouldn't happen due to DEPENDENCIES = ["wifi"], but check anyway
@@ -72,43 +84,24 @@ def _final_validate(config: ConfigType) -> ConfigType:
             "Add 'ap:' to your WiFi configuration to enable the captive portal."
         )
 
-    # Register socket needs for DNS server and additional HTTP connections
-    # - 1 UDP socket for DNS server
-    # - 3 additional TCP sockets for captive portal detection probes + configuration requests
-    #   OS captive portal detection makes multiple probe requests that stay in TIME_WAIT.
-    #   Need headroom for actual user configuration requests.
-    #   LRU purging will reclaim idle sockets to prevent exhaustion from repeated attempts.
-    from esphome.components import socket
-
-    socket.consume_sockets(4, "captive_portal")(config)
-
-    return config
+    web_server_base.consume_captive_dns_sockets(config, DOMAIN)
 
 
 FINAL_VALIDATE_SCHEMA = _final_validate
 
 
 @coroutine_with_priority(CoroPriority.CAPTIVE_PORTAL)
-async def to_code(config):
+async def to_code(config: ConfigType) -> None:
     paren = await cg.get_variable(config[CONF_WEB_SERVER_BASE_ID])
 
     var = cg.new_Pvariable(config[CONF_ID], paren)
     await cg.register_component(var, config)
     cg.add_define("USE_CAPTIVE_PORTAL")
+    # The portal reads wifi scan results from the web server task; this makes the
+    # wifi component guard them with a lock on multi-threaded platforms.
+    wifi.request_wifi_scan_results_lock()
 
-    if CORE.using_arduino:
-        if CORE.is_esp8266:
-            cg.add_library("DNSServer", None)
-        if CORE.is_libretiny:
-            cg.add_library("DNSServer", None)
+    if config[CONF_COMPRESSION] == "gzip":
+        cg.add_define("USE_CAPTIVE_PORTAL_GZIP")
 
-
-# Only compile the ESP-IDF DNS server when using ESP-IDF framework
-FILTER_SOURCE_FILES = filter_source_files_from_platform(
-    {
-        "dns_server_esp32_idf.cpp": {
-            PlatformFramework.ESP32_ARDUINO,
-            PlatformFramework.ESP32_IDF,
-        },
-    }
-)
+    web_server_base.add_captive_dns_library()

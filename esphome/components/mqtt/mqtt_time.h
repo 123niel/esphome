@@ -10,7 +10,7 @@
 
 namespace esphome::mqtt {
 
-class MQTTTimeComponent : public mqtt::MQTTComponent {
+class MQTTTimeComponent final : public mqtt::MQTTComponent {
  public:
   /** Construct this MQTTTimeComponent instance with the provided friendly_name and time
    *
@@ -31,7 +31,7 @@ class MQTTTimeComponent : public mqtt::MQTTComponent {
   bool publish_state(uint8_t hour, uint8_t minute, uint8_t second);
 
  protected:
-  std::string component_type() const override;
+  const char *component_type() const override;
   const EntityBase *get_entity() const override;
 
   datetime::TimeEntity *time_;

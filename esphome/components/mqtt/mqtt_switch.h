@@ -10,7 +10,7 @@
 
 namespace esphome::mqtt {
 
-class MQTTSwitchComponent : public mqtt::MQTTComponent {
+class MQTTSwitchComponent final : public mqtt::MQTTComponent {
  public:
   explicit MQTTSwitchComponent(switch_::Switch *a_switch);
 
@@ -27,7 +27,7 @@ class MQTTSwitchComponent : public mqtt::MQTTComponent {
 
  protected:
   /// "switch" component type.
-  std::string component_type() const override;
+  const char *component_type() const override;
   const EntityBase *get_entity() const override;
 
   switch_::Switch *switch_;
